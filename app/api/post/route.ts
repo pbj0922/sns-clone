@@ -28,8 +28,8 @@ export const GET = async (request: NextRequest) => {
     // (3-1)*3 = 6~8 678
 
     const posts = await prismaClient.post.findMany({
-      skip: (+page - 1) * 3,
-      take: 3,
+      skip: (+page - 1) * 10,
+      take: 10,
       orderBy: {
         createdAt: "desc",
       },
