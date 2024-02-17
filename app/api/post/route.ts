@@ -28,6 +28,11 @@ export const GET = async (request: NextRequest) => {
     // (3-1)*3 = 6~8 678
 
     const posts = await prismaClient.post.findMany({
+      where: {
+        NOT: {
+          content: null,
+        },
+      },
       skip: (+page - 1) * 10,
       take: 10,
       orderBy: {
@@ -56,7 +61,7 @@ export const GET = async (request: NextRequest) => {
 
 export const POST = async (request: NextRequest) => {
   try {
-    const { content } = await request.json();
+    const { content, postId } = await request.json();
     const session = await getServerSession(authOptions);
 
     if (!content) {
@@ -81,10 +86,16 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const post = await prismaClient.post.create({
-      data: {
+    const post = await prismaClient.post.upsert({
+      where: {
+        id: postId,
+      },
+      create: {
         content,
         userId: session.user.id,
+      },
+      update: {
+        content,
       },
     });
 

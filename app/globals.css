@@ -14,4 +14,8 @@
   .card-style {
     @apply border-black border-2 p-2;
   }
+
+  .image-style {
+    @apply relative w-24 h-24 md:w-48 md:h-48;
+  }
 }

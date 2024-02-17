@@ -1,6 +1,11 @@
 import { authOptions } from "@/app/lib/auth";
 import { prismaClient } from "@/app/lib/prismaClient";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
@@ -8,6 +13,42 @@ import { v4 as uuidv4 } from "uuid";
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
 });
+
+export const GET = async (request: NextRequest) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const imageFileName = searchParams.get("image-file-name");
+
+    if (!imageFileName) {
+      return NextResponse.json(
+        {
+          message: "Not exist image file name.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+      Key: imageFileName,
+    });
+
+    const awsResponse = await getSignedUrl(s3Client, getObjectCommand, {
+      expiresIn: 3600,
+    });
+
+    return NextResponse.json(awsResponse);
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        message: error,
+      },
+      { status: 500 }
+    );
+  }
+};
 
 export const POST = async (request: NextRequest) => {
   try {
@@ -26,7 +67,12 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    if (!imageFile) return;
+    if (!imageFile) {
+      return NextResponse.json(
+        { message: "Not exist image." },
+        { status: 400 }
+      );
+    }
 
     const fileExtension = imageFile.name.split(".").pop()?.toLocaleLowerCase();
     const uuid = uuidv4();
