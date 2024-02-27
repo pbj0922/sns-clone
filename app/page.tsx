@@ -5,6 +5,7 @@ import { NextPage } from "next";
 import { useEffect, useRef, useState } from "react";
 import { IPost } from "@/types";
 import PostCard from "./components/PostCard";
+import Link from "next/link";
 
 const Home: NextPage = () => {
   const [page, setPage] = useState<number>(1);
@@ -46,7 +47,9 @@ const Home: NextPage = () => {
     <div className="bg-red-300 grow">
       <div className="flex flex-col p-4 gap-4">
         {posts.map((v, i) => (
-          <PostCard key={i} post={v} />
+          <Link key={i} href={`/post/${v.id}`}>
+            <PostCard post={v} />
+          </Link>
         ))}
       </div>
       <div className="w-full text-white" ref={infiniteScrollRef}>

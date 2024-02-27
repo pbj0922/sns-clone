@@ -28,6 +28,23 @@ export const GET = async (request: NextRequest) => {
       );
     }
 
+    const post = await prismaClient.post.findFirst({
+      where: {
+        image: imageFileName,
+      },
+    });
+
+    if (!post) {
+      return NextResponse.json(
+        {
+          message: "Not exist post.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     const getObjectCommand = new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET,
       Key: imageFileName,

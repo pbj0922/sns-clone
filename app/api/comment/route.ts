@@ -1,21 +1,17 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 import { prismaClient } from "@/app/lib/prismaClient";
-import { getServerSession } from "next-auth";
-import { NextRequest, NextResponse } from "next/server";
 
-// 모든 글 내용을 조회
-// 로그인 필요 없음
 export const GET = async (request: NextRequest) => {
   try {
-    // localhost:3000/api/post?page=10&data=abc
     const { searchParams } = new URL(request.url);
-    const page = searchParams.get("page");
+    const postId = searchParams.get("postId");
 
-    //  || +page <= 0
-    if (!page || isNaN(+page)) {
+    if (!postId) {
       return NextResponse.json(
         {
-          message: "Not exist page.",
+          message: "Not exist post id.",
         },
         {
           status: 400,
@@ -23,34 +19,42 @@ export const GET = async (request: NextRequest) => {
       );
     }
 
-    // (1-1)*3 = 0~2 012
-    // (2-1)*3 = 3~5 345
-    // (3-1)*3 = 6~8 678
-
-    const posts = await prismaClient.post.findMany({
+    const post = await prismaClient.post.findUnique({
       where: {
-        NOT: {
-          content: null,
-        },
+        id: postId,
       },
-      skip: (+page - 1) * 10,
-      take: 10,
+    });
+
+    if (!post) {
+      return NextResponse.json(
+        {
+          message: "Not exist post.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const comments = await prismaClient.comment.findMany({
+      where: {
+        postId,
+      },
       orderBy: {
         createdAt: "desc",
       },
-      // select 또는 include 상황에 맞게 사용
       include: {
         user: true,
       },
     });
 
-    return NextResponse.json(posts);
+    return NextResponse.json(comments);
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
       {
-        message: error,
+        message: "Server Error.",
       },
       {
         status: 500,
@@ -61,13 +65,13 @@ export const GET = async (request: NextRequest) => {
 
 export const POST = async (request: NextRequest) => {
   try {
-    const { content, postId } = await request.json();
     const session = await getServerSession(authOptions);
+    const { content, postId } = await request.json();
 
-    if (!content) {
+    if (!content || !postId) {
       return NextResponse.json(
         {
-          message: "Not exist content.",
+          message: "Not exist data",
         },
         {
           status: 400,
@@ -78,7 +82,7 @@ export const POST = async (request: NextRequest) => {
     if (!session) {
       return NextResponse.json(
         {
-          message: "Not exist session.",
+          message: "Wrong session",
         },
         {
           status: 400,
@@ -86,27 +90,24 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // update + create = upsert
-    const post = await prismaClient.post.upsert({
-      where: {
-        id: postId,
-      },
-      create: {
+    const comment = await prismaClient.comment.create({
+      data: {
         content,
         userId: session.user.id,
+        postId,
       },
-      update: {
-        content,
+      include: {
+        user: true,
       },
     });
 
-    return NextResponse.json(post);
+    return NextResponse.json(comment);
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
       {
-        message: error,
+        message: "Server Error.",
       },
       {
         status: 500,
