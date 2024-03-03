@@ -45,6 +45,14 @@ export const GET = async (request: NextRequest) => {
       },
       include: {
         user: true,
+        nestedComments: {
+          include: {
+            user: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -83,6 +91,23 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json(
         {
           message: "Wrong session",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const post = await prismaClient.post.findUnique({
+      where: {
+        id: postId,
+      },
+    });
+
+    if (!post) {
+      return NextResponse.json(
+        {
+          message: "Not exist post.",
         },
         {
           status: 400,

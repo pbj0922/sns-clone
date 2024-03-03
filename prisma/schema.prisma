@@ -57,15 +57,19 @@ model Post {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  content   String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  content         String
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId          String?
+  post            Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentCommentId String?
+  parentComment   Comment?  @relation("nestedComment", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  nestedComments  Comment[] @relation("nestedComment")
 
   @@index([userId])
   @@index([postId])
+  @@index([parentCommentId])
 }

@@ -6,4 +6,5 @@ export interface IPost extends Post {
 
 export interface IComment extends Comment {
   user: User;
+  nestedComments: IComment[];
 }
